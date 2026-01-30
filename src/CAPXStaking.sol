@@ -2,13 +2,9 @@
 pragma solidity 0.8.30;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {
-    SafeERC20
-} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {
-    ReentrancyGuard
-} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
@@ -87,12 +83,7 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
     // Events
     // ----------------------------
 
-    event Staked(
-        address indexed user,
-        uint256 amount,
-        LockOption lockOption,
-        uint256 unlockTime
-    );
+    event Staked(address indexed user, uint256 amount, LockOption lockOption, uint256 unlockTime);
     event Unstaked(address indexed user, uint256 amount);
     event RewardClaimed(address indexed user, uint256 reward);
     event Compounded(address indexed user, uint256 rewardAdded);
@@ -100,17 +91,9 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
 
     event BaseAprUpdated(uint256 oldAprBps, uint256 newAprBps);
     event MinStakeAmountUpdated(uint256 oldMinStake, uint256 newMinStake);
-    event LockMultiplierUpdated(
-        LockOption indexed lockOption,
-        uint256 oldMultiplierBps,
-        uint256 newMultiplierBps
-    );
+    event LockMultiplierUpdated(LockOption indexed lockOption, uint256 oldMultiplierBps, uint256 newMultiplierBps);
 
-    event TokenRecovered(
-        address indexed token,
-        address indexed to,
-        uint256 amount
-    );
+    event TokenRecovered(address indexed token, address indexed to, uint256 amount);
 
     // ----------------------------
     // Errors
@@ -136,8 +119,9 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
      * @param capxToken CAPX token address.
      */
     constructor(address admin, address capxToken) Ownable(admin) {
-        if (admin == address(0) || capxToken == address(0))
+        if (admin == address(0) || capxToken == address(0)) {
             revert ZeroAddress();
+        }
         if (!_isContract(admin)) revert AdminMustBeContract();
 
         capx = IERC20(capxToken);
@@ -163,10 +147,7 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
      * @param amount Amount of CAPX to stake.
      * @param lockOption FLEX / 30d / 90d / 180d.
      */
-    function stake(
-        uint256 amount,
-        LockOption lockOption
-    ) external nonReentrant whenNotPaused {
+    function stake(uint256 amount, LockOption lockOption) external nonReentrant whenNotPaused {
         if (amount < minStakeAmount) revert InvalidAmount();
 
         Position storage p = userPositions[msg.sender][lockOption];
@@ -214,9 +195,7 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
      *      Works even during lock period.
      * @param lockOption The lock option for the position to compound.
      */
-    function compound(
-        LockOption lockOption
-    ) external nonReentrant whenNotPaused {
+    function compound(LockOption lockOption) external nonReentrant whenNotPaused {
         Position storage p = userPositions[msg.sender][lockOption];
         if (!p.active) revert NoActivePosition();
 
@@ -306,10 +285,7 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
      * @param lockOption Lock option.
      * @param newMultiplierBps New multiplier in bps (10_000 = 1.00x).
      */
-    function setLockMultiplierBps(
-        LockOption lockOption,
-        uint256 newMultiplierBps
-    ) external onlyOwner {
+    function setLockMultiplierBps(LockOption lockOption, uint256 newMultiplierBps) external onlyOwner {
         if (newMultiplierBps < 10_000) revert InvalidRate();
 
         uint256 old = lockMultiplierBps[lockOption];
@@ -339,11 +315,7 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
      * @param to Receiver address.
      * @param amount Amount to recover.
      */
-    function recoverToken(
-        address token,
-        address to,
-        uint256 amount
-    ) external onlyOwner nonReentrant {
+    function recoverToken(address token, address to, uint256 amount) external onlyOwner nonReentrant {
         if (token == address(0) || to == address(0)) revert ZeroAddress();
         if (amount == 0) revert InvalidAmount();
         if (token == address(capx)) revert CannotRecoverCAPX();
@@ -361,10 +333,7 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
      * @param user Address of the user.
      * @param lockOption The lock option to retrieve.
      */
-    function getPosition(
-        address user,
-        LockOption lockOption
-    ) external view returns (Position memory) {
+    function getPosition(address user, LockOption lockOption) external view returns (Position memory) {
         return userPositions[user][lockOption];
     }
 
@@ -373,16 +342,13 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
      * @param user Address of the user.
      * @return positions Array of 4 Position structs in lock option order.
      */
-    function getAllPositions(
-        address user
-    ) external view returns (Position[4] memory) {
-        return
-            [
-                userPositions[user][LockOption.FLEX],
-                userPositions[user][LockOption.DAYS_30],
-                userPositions[user][LockOption.DAYS_90],
-                userPositions[user][LockOption.DAYS_180]
-            ];
+    function getAllPositions(address user) external view returns (Position[4] memory) {
+        return [
+            userPositions[user][LockOption.FLEX],
+            userPositions[user][LockOption.DAYS_30],
+            userPositions[user][LockOption.DAYS_90],
+            userPositions[user][LockOption.DAYS_180]
+        ];
     }
 
     /**
@@ -390,10 +356,7 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
      * @param user Address of the user.
      * @param lockOption The lock option to check.
      */
-    function claimable(
-        address user,
-        LockOption lockOption
-    ) external view returns (uint256) {
+    function claimable(address user, LockOption lockOption) external view returns (uint256) {
         Position memory p = userPositions[user][lockOption];
         if (!p.active || p.amount == 0) return 0;
         return _claimableRewardView(p);
@@ -422,9 +385,7 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
     /**
      * @notice Returns the effective APR (bps) for a lock option.
      */
-    function effectiveAprBps(
-        LockOption lockOption
-    ) external view returns (uint256) {
+    function effectiveAprBps(LockOption lockOption) external view returns (uint256) {
         return (baseAprBps * lockMultiplierBps[lockOption]) / BPS_DENOMINATOR;
     }
 
@@ -432,9 +393,7 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
     // Internal
     // ----------------------------
 
-    function _lockDuration(
-        LockOption lockOption
-    ) internal pure returns (uint256) {
+    function _lockDuration(LockOption lockOption) internal pure returns (uint256) {
         if (lockOption == LockOption.FLEX) return 0;
         if (lockOption == LockOption.DAYS_30) return 30 days;
         if (lockOption == LockOption.DAYS_90) return 90 days;
@@ -442,16 +401,12 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
         return 0;
     }
 
-    function _claimableReward(
-        Position storage p
-    ) internal view returns (uint256) {
+    function _claimableReward(Position storage p) internal view returns (uint256) {
         Position memory copy = p;
         return _claimableRewardView(copy);
     }
 
-    function _claimableRewardView(
-        Position memory p
-    ) internal view returns (uint256) {
+    function _claimableRewardView(Position memory p) internal view returns (uint256) {
         uint256 elapsed = block.timestamp - uint256(p.lastClaimTime);
         if (elapsed == 0) return 0;
 
@@ -459,9 +414,7 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
         uint256 aprBps = (baseAprBps * multiplier) / BPS_DENOMINATOR;
 
         // reward = amount * apr * elapsed / year
-        return
-            (uint256(p.amount) * aprBps * elapsed) /
-            (BPS_DENOMINATOR * SECONDS_PER_YEAR);
+        return (uint256(p.amount) * aprBps * elapsed) / (BPS_DENOMINATOR * SECONDS_PER_YEAR);
     }
 
     function _availableRewards() internal view returns (uint256) {
