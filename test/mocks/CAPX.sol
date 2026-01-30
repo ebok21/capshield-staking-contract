@@ -15,28 +15,13 @@ interface ICAPX {
     error AdminMustBeContract();
 
     event Mint(address indexed to, uint256 amount, uint256 indexed role);
-    event RevenueMint(
-        uint256 revenue,
-        uint256 marketValue,
-        uint256 tokensMinted
-    );
+    event RevenueMint(uint256 revenue, uint256 marketValue, uint256 tokensMinted);
     event TreasuryFee(address indexed from, address indexed to, uint256 amount);
-    event TreasuryAddressUpdated(
-        address indexed oldTreasury,
-        address indexed newTreasury
-    );
+    event TreasuryAddressUpdated(address indexed oldTreasury, address indexed newTreasury);
     event DaoAddressUpdated(address indexed oldDao, address indexed newDao);
     event ExemptionUpdated(address indexed account, bool exempt);
-    event RoleGranted(
-        uint256 indexed role,
-        address indexed account,
-        address indexed sender
-    );
-    event RoleRevoked(
-        uint256 indexed role,
-        address indexed account,
-        address indexed sender
-    );
+    event RoleGranted(uint256 indexed role, address indexed account, address indexed sender);
+    event RoleRevoked(uint256 indexed role, address indexed account, address indexed sender);
     event Burn(address indexed from, uint256 amount);
 
     struct MintAllocation {
@@ -51,11 +36,7 @@ interface ICAPX {
 
     function daoMint(address to, uint256 amount) external;
 
-    function revenueMint(
-        address to,
-        uint256 revenue,
-        uint256 marketValue
-    ) external;
+    function revenueMint(address to, uint256 revenue, uint256 marketValue) external;
 
     function setTreasuryAddress(address newTreasury) external;
 
@@ -104,10 +85,7 @@ contract CAPX is ERC20, OwnableRoles, Pausable, ICAPX {
         require(_isContract(admin), AdminMustBeContract());
 
         _initializeOwner(admin);
-        _grantRoles(
-            admin,
-            TEAM_MINTER_ROLE | TREASURY_MINTER_ROLE | DAO_MINTER_ROLE
-        );
+        _grantRoles(admin, TEAM_MINTER_ROLE | TREASURY_MINTER_ROLE | DAO_MINTER_ROLE);
 
         treasury = _treasury;
         dao = _dao;
@@ -142,10 +120,7 @@ contract CAPX is ERC20, OwnableRoles, Pausable, ICAPX {
         return "CAPX";
     }
 
-    function teamMint(
-        address to,
-        uint256 amount
-    )
+    function teamMint(address to, uint256 amount)
         external
         onlyRoles(TEAM_MINTER_ROLE)
         whenNotPaused
@@ -161,10 +136,7 @@ contract CAPX is ERC20, OwnableRoles, Pausable, ICAPX {
         emit Mint(to, amount, TEAM_MINTER_ROLE);
     }
 
-    function treasuryMint(
-        address to,
-        uint256 amount
-    )
+    function treasuryMint(address to, uint256 amount)
         external
         onlyRoles(TREASURY_MINTER_ROLE)
         whenNotPaused
@@ -180,10 +152,7 @@ contract CAPX is ERC20, OwnableRoles, Pausable, ICAPX {
         emit Mint(to, amount, TREASURY_MINTER_ROLE);
     }
 
-    function daoMint(
-        address to,
-        uint256 amount
-    )
+    function daoMint(address to, uint256 amount)
         external
         onlyRoles(DAO_MINTER_ROLE)
         whenNotPaused
@@ -199,11 +168,12 @@ contract CAPX is ERC20, OwnableRoles, Pausable, ICAPX {
         emit Mint(to, amount, DAO_MINTER_ROLE);
     }
 
-    function revenueMint(
-        address to,
-        uint256 revenue,
-        uint256 marketValue
-    ) external onlyOwner whenNotPaused validAddress(to) {
+    function revenueMint(address to, uint256 revenue, uint256 marketValue)
+        external
+        onlyOwner
+        whenNotPaused
+        validAddress(to)
+    {
         require(revenue > 0, InvalidRevenue());
         require(marketValue > 0, InvalidMarketValue());
 
@@ -217,9 +187,7 @@ contract CAPX is ERC20, OwnableRoles, Pausable, ICAPX {
         emit RevenueMint(revenue, marketValue, tokensToMint);
     }
 
-    function setTreasuryAddress(
-        address newTreasury
-    ) external onlyOwner validAddress(newTreasury) {
+    function setTreasuryAddress(address newTreasury) external onlyOwner validAddress(newTreasury) {
         address oldTreasury = treasury;
         treasury = newTreasury;
 
@@ -231,9 +199,7 @@ contract CAPX is ERC20, OwnableRoles, Pausable, ICAPX {
         emit ExemptionUpdated(newTreasury, true);
     }
 
-    function setDaoAddress(
-        address newDao
-    ) external onlyOwner validAddress(newDao) {
+    function setDaoAddress(address newDao) external onlyOwner validAddress(newDao) {
         address oldDao = dao;
         dao = newDao;
 
@@ -245,10 +211,7 @@ contract CAPX is ERC20, OwnableRoles, Pausable, ICAPX {
         emit ExemptionUpdated(newDao, true);
     }
 
-    function setExemption(
-        address account,
-        bool exempt
-    ) external onlyOwner validAddress(account) {
+    function setExemption(address account, bool exempt) external onlyOwner validAddress(account) {
         exemptions[account] = exempt;
         emit ExemptionUpdated(account, exempt);
     }
@@ -261,19 +224,12 @@ contract CAPX is ERC20, OwnableRoles, Pausable, ICAPX {
         _unpause();
     }
 
-    function transfer(
-        address to,
-        uint256 amount
-    ) public override whenNotPaused returns (bool) {
+    function transfer(address to, uint256 amount) public override whenNotPaused returns (bool) {
         _applyTransferWithFees(msg.sender, to, amount);
         return true;
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) public override whenNotPaused returns (bool) {
+    function transferFrom(address from, address to, uint256 amount) public override whenNotPaused returns (bool) {
         _spendAllowance(from, msg.sender, amount);
         _applyTransferWithFees(from, to, amount);
         return true;
@@ -290,32 +246,22 @@ contract CAPX is ERC20, OwnableRoles, Pausable, ICAPX {
         emit Burn(from, amount);
     }
 
-    function grantRoles(
-        address user,
-        uint256 roles
-    ) public payable override onlyOwner {
+    function grantRoles(address user, uint256 roles) public payable override onlyOwner {
         super.grantRoles(user, roles);
         emit RoleGranted(roles, user, msg.sender);
     }
 
-    function revokeRoles(
-        address user,
-        uint256 roles
-    ) public payable override onlyOwner {
+    function revokeRoles(address user, uint256 roles) public payable override onlyOwner {
         super.revokeRoles(user, roles);
         emit RoleRevoked(roles, user, msg.sender);
     }
 
-    function transferOwnership(
-        address newOwner
-    ) public payable override onlyOwner {
+    function transferOwnership(address newOwner) public payable override onlyOwner {
         require(_isContract(newOwner), AdminMustBeContract());
         super.transferOwnership(newOwner);
     }
 
-    function completeOwnershipHandover(
-        address pendingOwner
-    ) public payable override onlyOwner {
+    function completeOwnershipHandover(address pendingOwner) public payable override onlyOwner {
         require(_isContract(pendingOwner), AdminMustBeContract());
         super.completeOwnershipHandover(pendingOwner);
     }
@@ -364,11 +310,7 @@ contract CAPX is ERC20, OwnableRoles, Pausable, ICAPX {
         return size > 0;
     }
 
-    function _applyTransferWithFees(
-        address from,
-        address to,
-        uint256 amount
-    ) internal {
+    function _applyTransferWithFees(address from, address to, uint256 amount) internal {
         require(from != address(0), ZeroAddress());
         require(to != address(0), ZeroAddress());
         require(amount > 0, InvalidAmount());
@@ -377,8 +319,7 @@ contract CAPX is ERC20, OwnableRoles, Pausable, ICAPX {
             super._transfer(from, to, amount);
         } else {
             uint256 burnAmount = (amount * BURN_FEE_PERCENT) / FEE_DENOMINATOR;
-            uint256 treasuryAmount = (amount * TREASURY_FEE_PERCENT) /
-                FEE_DENOMINATOR;
+            uint256 treasuryAmount = (amount * TREASURY_FEE_PERCENT) / FEE_DENOMINATOR;
             uint256 recipientAmount = amount - burnAmount - treasuryAmount;
 
             if (burnAmount > 0) {
