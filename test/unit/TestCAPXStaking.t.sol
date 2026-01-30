@@ -70,10 +70,7 @@ contract TestCAPXStaking is Test {
         vm.prank(user1);
         staking.stake(MIN_STAKE, CAPXStaking.LockOption.FLEX);
 
-        CAPXStaking.Position memory pos = staking.getPosition(
-            user1,
-            CAPXStaking.LockOption.FLEX
-        );
+        CAPXStaking.Position memory pos = staking.getPosition(user1, CAPXStaking.LockOption.FLEX);
         assertEq(pos.amount, MIN_STAKE);
         assertEq(pos.unlockTime, block.timestamp); // FLEX has no lock
         assertTrue(pos.active);
@@ -84,10 +81,7 @@ contract TestCAPXStaking is Test {
         vm.prank(user1);
         staking.stake(MIN_STAKE, CAPXStaking.LockOption.DAYS_30);
 
-        CAPXStaking.Position memory pos = staking.getPosition(
-            user1,
-            CAPXStaking.LockOption.DAYS_30
-        );
+        CAPXStaking.Position memory pos = staking.getPosition(user1, CAPXStaking.LockOption.DAYS_30);
         assertEq(pos.amount, MIN_STAKE);
         assertEq(pos.unlockTime, block.timestamp + 30 days);
         assertTrue(pos.active);
@@ -97,10 +91,7 @@ contract TestCAPXStaking is Test {
         vm.prank(user1);
         staking.stake(MIN_STAKE, CAPXStaking.LockOption.DAYS_90);
 
-        CAPXStaking.Position memory pos = staking.getPosition(
-            user1,
-            CAPXStaking.LockOption.DAYS_90
-        );
+        CAPXStaking.Position memory pos = staking.getPosition(user1, CAPXStaking.LockOption.DAYS_90);
         assertEq(pos.amount, MIN_STAKE);
         assertEq(pos.unlockTime, block.timestamp + 90 days);
         assertTrue(pos.active);
@@ -110,10 +101,7 @@ contract TestCAPXStaking is Test {
         vm.prank(user1);
         staking.stake(MIN_STAKE, CAPXStaking.LockOption.DAYS_180);
 
-        CAPXStaking.Position memory pos = staking.getPosition(
-            user1,
-            CAPXStaking.LockOption.DAYS_180
-        );
+        CAPXStaking.Position memory pos = staking.getPosition(user1, CAPXStaking.LockOption.DAYS_180);
         assertEq(pos.amount, MIN_STAKE);
         assertEq(pos.unlockTime, block.timestamp + 180 days);
         assertTrue(pos.active);
@@ -127,9 +115,7 @@ contract TestCAPXStaking is Test {
         staking.stake(MIN_STAKE, CAPXStaking.LockOption.DAYS_180);
         vm.stopPrank();
 
-        CAPXStaking.Position[4] memory positions = staking.getAllPositions(
-            user1
-        );
+        CAPXStaking.Position[4] memory positions = staking.getAllPositions(user1);
 
         assertTrue(positions[0].active);
         assertTrue(positions[1].active);
@@ -184,10 +170,7 @@ contract TestCAPXStaking is Test {
         // Advance time by 1 year
         vm.warp(block.timestamp + 365 days);
 
-        uint256 claimable = staking.claimable(
-            user1,
-            CAPXStaking.LockOption.FLEX
-        );
+        uint256 claimable = staking.claimable(user1, CAPXStaking.LockOption.FLEX);
         assertGt(claimable, 0);
 
         vm.prank(user1);
@@ -208,10 +191,7 @@ contract TestCAPXStaking is Test {
         staking.claim(CAPXStaking.LockOption.DAYS_30);
 
         // Should not revert
-        CAPXStaking.Position memory pos = staking.getPosition(
-            user1,
-            CAPXStaking.LockOption.DAYS_30
-        );
+        CAPXStaking.Position memory pos = staking.getPosition(user1, CAPXStaking.LockOption.DAYS_30);
         assertTrue(pos.active);
     }
 
@@ -231,18 +211,12 @@ contract TestCAPXStaking is Test {
         // Advance time and compound
         vm.warp(block.timestamp + 365 days);
 
-        uint256 claimableBefore = staking.claimable(
-            user1,
-            CAPXStaking.LockOption.FLEX
-        );
+        uint256 claimableBefore = staking.claimable(user1, CAPXStaking.LockOption.FLEX);
 
         vm.prank(user1);
         staking.compound(CAPXStaking.LockOption.FLEX);
 
-        CAPXStaking.Position memory pos = staking.getPosition(
-            user1,
-            CAPXStaking.LockOption.FLEX
-        );
+        CAPXStaking.Position memory pos = staking.getPosition(user1, CAPXStaking.LockOption.FLEX);
         assertEq(pos.amount, stakeAmount + claimableBefore);
         assertEq(staking.totalStaked(), stakeAmount + claimableBefore);
     }
@@ -255,10 +229,7 @@ contract TestCAPXStaking is Test {
         vm.prank(user1);
         staking.compound(CAPXStaking.LockOption.FLEX);
 
-        CAPXStaking.Position memory pos = staking.getPosition(
-            user1,
-            CAPXStaking.LockOption.FLEX
-        );
+        CAPXStaking.Position memory pos = staking.getPosition(user1, CAPXStaking.LockOption.FLEX);
         assertEq(pos.amount, MIN_STAKE);
     }
 
@@ -273,10 +244,7 @@ contract TestCAPXStaking is Test {
         vm.prank(user1);
         staking.compound(CAPXStaking.LockOption.DAYS_180);
 
-        CAPXStaking.Position memory pos = staking.getPosition(
-            user1,
-            CAPXStaking.LockOption.DAYS_180
-        );
+        CAPXStaking.Position memory pos = staking.getPosition(user1, CAPXStaking.LockOption.DAYS_180);
         assertTrue(pos.active);
     }
 
@@ -291,10 +259,7 @@ contract TestCAPXStaking is Test {
         vm.prank(user1);
         staking.unstake(CAPXStaking.LockOption.FLEX);
 
-        CAPXStaking.Position memory pos = staking.getPosition(
-            user1,
-            CAPXStaking.LockOption.FLEX
-        );
+        CAPXStaking.Position memory pos = staking.getPosition(user1, CAPXStaking.LockOption.FLEX);
         assertFalse(pos.active);
         assertEq(staking.totalStaked(), 0);
     }
@@ -319,10 +284,7 @@ contract TestCAPXStaking is Test {
         vm.prank(user1);
         staking.unstake(CAPXStaking.LockOption.DAYS_30);
 
-        CAPXStaking.Position memory pos = staking.getPosition(
-            user1,
-            CAPXStaking.LockOption.DAYS_30
-        );
+        CAPXStaking.Position memory pos = staking.getPosition(user1, CAPXStaking.LockOption.DAYS_30);
         assertFalse(pos.active);
     }
 
@@ -372,15 +334,9 @@ contract TestCAPXStaking is Test {
         uint256 newMultiplier = 25000; // 2.5x
 
         vm.prank(admin);
-        staking.setLockMultiplierBps(
-            CAPXStaking.LockOption.DAYS_180,
-            newMultiplier
-        );
+        staking.setLockMultiplierBps(CAPXStaking.LockOption.DAYS_180, newMultiplier);
 
-        assertEq(
-            staking.lockMultiplierBps(CAPXStaking.LockOption.DAYS_180),
-            newMultiplier
-        );
+        assertEq(staking.lockMultiplierBps(CAPXStaking.LockOption.DAYS_180), newMultiplier);
     }
 
     function test_setLockMultiplierBps_below_minimum() public {
@@ -388,10 +344,7 @@ contract TestCAPXStaking is Test {
 
         vm.prank(admin);
         vm.expectRevert(CAPXStaking.InvalidRate.selector);
-        staking.setLockMultiplierBps(
-            CAPXStaking.LockOption.FLEX,
-            invalidMultiplier
-        );
+        staking.setLockMultiplierBps(CAPXStaking.LockOption.FLEX, invalidMultiplier);
     }
 
     function test_setMinStakeAmount() public {
@@ -443,13 +396,9 @@ contract TestCAPXStaking is Test {
 
         vm.warp(block.timestamp + 365 days);
 
-        uint256 claimable = staking.claimable(
-            user1,
-            CAPXStaking.LockOption.FLEX
-        );
+        uint256 claimable = staking.claimable(user1, CAPXStaking.LockOption.FLEX);
         uint256 baseApr = staking.baseAprBps(); // 1200 = 12%
-        uint256 expectedReward = (stakeAmount * baseApr * 365 days) /
-            (10000 * 365 days);
+        uint256 expectedReward = (stakeAmount * baseApr * 365 days) / (10000 * 365 days);
 
         assertApproxEqAbs(claimable, expectedReward, 1e18); // Allow small rounding error
     }
@@ -465,27 +414,17 @@ contract TestCAPXStaking is Test {
         vm.warp(block.timestamp + 365 days);
 
         uint256 totalClaimable = staking.totalClaimable(user1);
-        uint256 claimableFlex = staking.claimable(
-            user1,
-            CAPXStaking.LockOption.FLEX
-        );
-        uint256 claimable30d = staking.claimable(
-            user1,
-            CAPXStaking.LockOption.DAYS_30
-        );
+        uint256 claimableFlex = staking.claimable(user1, CAPXStaking.LockOption.FLEX);
+        uint256 claimable30d = staking.claimable(user1, CAPXStaking.LockOption.DAYS_30);
 
         assertEq(totalClaimable, claimableFlex + claimable30d);
     }
 
     function test_effectiveAprBps() public {
         uint256 baseApr = staking.baseAprBps();
-        uint256 multiplier = staking.lockMultiplierBps(
-            CAPXStaking.LockOption.DAYS_180
-        );
+        uint256 multiplier = staking.lockMultiplierBps(CAPXStaking.LockOption.DAYS_180);
 
-        uint256 effective = staking.effectiveAprBps(
-            CAPXStaking.LockOption.DAYS_180
-        );
+        uint256 effective = staking.effectiveAprBps(CAPXStaking.LockOption.DAYS_180);
 
         assertEq(effective, (baseApr * multiplier) / 10000);
     }
@@ -498,11 +437,7 @@ contract TestCAPXStaking is Test {
         return address(new MockMultisig());
     }
 
-    function _stake(
-        address user,
-        uint256 amount,
-        CAPXStaking.LockOption lockOption
-    ) internal {
+    function _stake(address user, uint256 amount, CAPXStaking.LockOption lockOption) internal {
         vm.prank(user);
         staking.stake(amount, lockOption);
     }
@@ -512,18 +447,12 @@ contract TestCAPXStaking is Test {
         staking.claim(lockOption);
     }
 
-    function _compound(
-        address user,
-        CAPXStaking.LockOption lockOption
-    ) internal {
+    function _compound(address user, CAPXStaking.LockOption lockOption) internal {
         vm.prank(user);
         staking.compound(lockOption);
     }
 
-    function _unstake(
-        address user,
-        CAPXStaking.LockOption lockOption
-    ) internal {
+    function _unstake(address user, CAPXStaking.LockOption lockOption) internal {
         vm.prank(user);
         staking.unstake(lockOption);
     }
