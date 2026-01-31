@@ -9,12 +9,12 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
  * @title CAPXStaking
- * @notice Single-position staking contract for CAPX with optional lock durations and CAPX-only rewards.
+ * @notice Multi-position staking contract for CAPX with per-lock options and CAPX-only rewards.
  *
  * @dev Key rules:
  * - Rewards are paid from a pre-funded reward pool (owner deposits CAPX in advance).
  * - Contract is expected to be fee-exempt/whitelisted in CAPX so transfers are not taxed.
- * - Each address can have only ONE active position at a time.
+ * - Each address can have up to FOUR active positions (one per lock option).
  * - Users cannot change their position configuration after staking (no adding to stake, no lock changes).
  * - Users can claim rewards anytime, even before unlock.
  * - Users can compound rewards on-chain via `compound()` which internally increases their staked amount without transferrinng tokens to the user.
@@ -46,7 +46,9 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Single staking position per user.
+     * @notice Single staking position per lock option (up to 4 positions per user).
+     * @dev Positions are independent per `LockOption` and accrue rewards separately. Keep
+     *      `uint128/uint64` packing when modifying fields to preserve storage layout.
      */
     struct Position {
         uint128 amount; // staked principal
@@ -215,7 +217,9 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
 
     /**
      * @notice Unstake principal. Locked positions can only unstake after unlock.
-     * @dev FLEX positions can unstake anytime.
+     * @dev Unstaking will automatically claim any accrued rewards for the specified
+     *      position and transfer principal + rewards to the caller. FLEX positions
+     *      can unstake anytime.
      * @param lockOption The lock option for the position to unstake.
      */
     function unstake(LockOption lockOption) external nonReentrant {
