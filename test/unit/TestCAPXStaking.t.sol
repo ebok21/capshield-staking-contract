@@ -429,7 +429,254 @@ contract TestCAPXStaking is Test {
         assertEq(effective, (baseApr * multiplier) / 10000);
     }
 
-    // ==================== Helper Functions ====================
+    // ==================== Reward Pool Depletion Tests ====================
+
+    function test_claim_insufficient_rewards_pool() public {
+        uint256 stakeAmount = 10000 * 10 ** 18;
+        vm.prank(user1);
+        staking.stake(stakeAmount, CAPXStaking.LockOption.FLEX);
+
+        // Advance time to accumulate rewards
+        vm.warp(block.timestamp + 365 days);
+
+        // Drain the reward pool completely by directly removing all CAPX
+        uint256 contractBalance = capx.balanceOf(address(staking));
+        vm.prank(address(staking));
+        capx.transfer(admin, contractBalance - stakeAmount); // Leave exactly stakeAmount
+
+        // Now try to claim - should fail with InsufficientRewards
+        vm.prank(user1);
+        vm.expectRevert(CAPXStaking.InsufficientRewards.selector);
+        staking.claim(CAPXStaking.LockOption.FLEX);
+    }
+
+    function test_unstake_insufficient_rewards_pool() public {
+        uint256 stakeAmount = 10000 * 10 ** 18;
+        vm.prank(user1);
+        staking.stake(stakeAmount, CAPXStaking.LockOption.FLEX);
+
+        // Advance time and drain pool
+        vm.warp(block.timestamp + 365 days);
+        uint256 contractBalance = capx.balanceOf(address(staking));
+        vm.prank(address(staking));
+        capx.transfer(admin, contractBalance - stakeAmount);
+
+        // Try to unstake - should fail with InsufficientRewards
+        vm.prank(user1);
+        vm.expectRevert(CAPXStaking.InsufficientRewards.selector);
+        staking.unstake(CAPXStaking.LockOption.FLEX);
+    }
+
+    function test_compound_insufficient_rewards_pool() public {
+        uint256 stakeAmount = 10000 * 10 ** 18;
+        vm.prank(user1);
+        staking.stake(stakeAmount, CAPXStaking.LockOption.FLEX);
+
+        // Advance time and drain pool
+        vm.warp(block.timestamp + 365 days);
+        uint256 contractBalance = capx.balanceOf(address(staking));
+        vm.prank(address(staking));
+        capx.transfer(admin, contractBalance - stakeAmount);
+
+        // Try to compound - should fail with InsufficientRewards
+        vm.prank(user1);
+        vm.expectRevert(CAPXStaking.InsufficientRewards.selector);
+        staking.compound(CAPXStaking.LockOption.FLEX);
+    }
+
+    // ==================== RecoverToken Tests ====================
+
+    function test_recoverToken_cannot_recover_capx() public {
+        uint256 amount = 1000 * 10 ** 18;
+        address recipient = makeAddr("recipient");
+
+        vm.prank(admin);
+        vm.expectRevert(CAPXStaking.CannotRecoverCAPX.selector);
+        staking.recoverToken(address(capx), recipient, amount);
+    }
+
+    function test_recoverToken_zero_address_token() public {
+        uint256 amount = 1000 * 10 ** 18;
+        address recipient = makeAddr("recipient");
+
+        vm.prank(admin);
+        vm.expectRevert(CAPXStaking.ZeroAddress.selector);
+        staking.recoverToken(address(0), recipient, amount);
+    }
+
+    function test_recoverToken_zero_address_recipient() public {
+        address someToken = makeAddr("token");
+        uint256 amount = 1000 * 10 ** 18;
+
+        vm.prank(admin);
+        vm.expectRevert(CAPXStaking.ZeroAddress.selector);
+        staking.recoverToken(someToken, address(0), amount);
+    }
+
+    function test_recoverToken_zero_amount() public {
+        address someToken = makeAddr("token");
+        address recipient = makeAddr("recipient");
+
+        vm.prank(admin);
+        vm.expectRevert(CAPXStaking.InvalidAmount.selector);
+        staking.recoverToken(someToken, recipient, 0);
+    }
+
+    // ==================== Zero APR Tests ====================
+
+    function test_setBaseAprBps_zero() public {
+        vm.prank(admin);
+        staking.setBaseAprBps(0);
+
+        assertEq(staking.baseAprBps(), 0);
+    }
+
+    function test_zero_apr_no_rewards() public {
+        vm.prank(admin);
+        staking.setBaseAprBps(0);
+
+        uint256 stakeAmount = 10000 * 10 ** 18;
+        vm.prank(user1);
+        staking.stake(stakeAmount, CAPXStaking.LockOption.FLEX);
+
+        // Advance time
+        vm.warp(block.timestamp + 365 days);
+
+        // Claimable should be 0 with 0% APR
+        uint256 claimable = staking.claimable(user1, CAPXStaking.LockOption.FLEX);
+        assertEq(claimable, 0);
+    }
+
+    // ==================== Lock Duration Boundary Tests ====================
+
+    function test_unstake_exactly_at_unlock_time() public {
+        vm.prank(user1);
+        staking.stake(MIN_STAKE, CAPXStaking.LockOption.DAYS_30);
+
+        CAPXStaking.Position memory pos = staking.getPosition(user1, CAPXStaking.LockOption.DAYS_30);
+        uint256 unlockTime = pos.unlockTime;
+
+        // Warp to exactly unlock time
+        vm.warp(unlockTime);
+
+        // Should be able to unstake
+        vm.prank(user1);
+        staking.unstake(CAPXStaking.LockOption.DAYS_30);
+
+        pos = staking.getPosition(user1, CAPXStaking.LockOption.DAYS_30);
+        assertFalse(pos.active);
+    }
+
+    function test_unstake_one_second_before_unlock() public {
+        vm.prank(user1);
+        staking.stake(MIN_STAKE, CAPXStaking.LockOption.DAYS_30);
+
+        CAPXStaking.Position memory pos = staking.getPosition(user1, CAPXStaking.LockOption.DAYS_30);
+        uint256 unlockTime = pos.unlockTime;
+
+        // Warp to one second before unlock
+        vm.warp(unlockTime - 1);
+
+        // Should not be able to unstake
+        vm.prank(user1);
+        vm.expectRevert(CAPXStaking.StillLocked.selector);
+        staking.unstake(CAPXStaking.LockOption.DAYS_30);
+    }
+
+    // ==================== Multiple Users / Competition Tests ====================
+
+    function test_multiple_users_claim_same_pool() public {
+        uint256 stakeAmount = 5000 * 10 ** 18;
+
+        // Both users stake same amount
+        vm.prank(user1);
+        staking.stake(stakeAmount, CAPXStaking.LockOption.FLEX);
+
+        vm.prank(user2);
+        staking.stake(stakeAmount, CAPXStaking.LockOption.FLEX);
+
+        // Advance time
+        vm.warp(block.timestamp + 365 days);
+
+        uint256 user1Claimable = staking.claimable(user1, CAPXStaking.LockOption.FLEX);
+        uint256 user2Claimable = staking.claimable(user2, CAPXStaking.LockOption.FLEX);
+
+        // Both should have equal rewards (staked same amount at same time)
+        assertEq(user1Claimable, user2Claimable);
+
+        // User 1 claims
+        vm.prank(user1);
+        staking.claim(CAPXStaking.LockOption.FLEX);
+
+        // User 2 should still be able to claim their rewards
+        vm.prank(user2);
+        staking.claim(CAPXStaking.LockOption.FLEX);
+
+        // Both should have received rewards
+        assertGt(capx.balanceOf(user1), INITIAL_CAPX_BALANCE - stakeAmount);
+        assertGt(capx.balanceOf(user2), INITIAL_CAPX_BALANCE - stakeAmount);
+    }
+
+    function test_user_different_lock_options_compete_for_rewards() public {
+        uint256 stakeAmount = 5000 * 10 ** 18;
+
+        // User1 stakes FLEX, User2 stakes 180d
+        vm.prank(user1);
+        staking.stake(stakeAmount, CAPXStaking.LockOption.FLEX);
+
+        vm.prank(user2);
+        staking.stake(stakeAmount, CAPXStaking.LockOption.DAYS_180);
+
+        vm.warp(block.timestamp + 365 days);
+
+        // User2 should have higher rewards due to 2.0x multiplier
+        uint256 user1Claimable = staking.claimable(user1, CAPXStaking.LockOption.FLEX);
+        uint256 user2Claimable = staking.claimable(user2, CAPXStaking.LockOption.DAYS_180);
+
+        // 180d has 2.0x multiplier vs FLEX 1.0x
+        uint256 expectedRatio = 2; // user2 should have ~2x more
+        assertGt(user2Claimable, user1Claimable);
+        assertApproxEqAbs(user2Claimable, user1Claimable * expectedRatio, 1e17);
+    }
+
+    // ==================== Non-Reentrancy & Guard Tests ====================
+
+    function test_pause_disables_all_operations() public {
+        vm.prank(user1);
+        staking.stake(MIN_STAKE, CAPXStaking.LockOption.FLEX);
+
+        vm.prank(admin);
+        staking.pause();
+
+        // Verify all operations fail when paused
+        vm.prank(user1);
+        vm.expectRevert();
+        staking.claim(CAPXStaking.LockOption.FLEX);
+
+        vm.prank(user2);
+        vm.expectRevert();
+        staking.stake(MIN_STAKE, CAPXStaking.LockOption.FLEX);
+
+        vm.prank(user1);
+        vm.expectRevert();
+        staking.compound(CAPXStaking.LockOption.FLEX);
+    }
+
+    function test_non_owner_cannot_call_admin_functions() public {
+        vm.prank(user1);
+        vm.expectRevert();
+        staking.setBaseAprBps(1500);
+
+        vm.prank(user1);
+        vm.expectRevert();
+        staking.setMinStakeAmount(2000 * 10 ** 18);
+
+        vm.prank(user1);
+        vm.expectRevert();
+        staking.pause();
+    }
+
+    // ==================== Internal Helpers ====================
 
     function _deployMockMultisig() internal returns (address) {
         // Deploy a simple contract to act as multisig
