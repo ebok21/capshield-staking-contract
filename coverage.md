@@ -1,6 +1,6 @@
 ```bash
-Compiling 36 files with Solc 0.8.30
-Solc 0.8.30 finished in 1.12s
+Compiling 37 files with Solc 0.8.30
+Solc 0.8.30 finished in 1.14s
 Compiler run successful with warnings:
 Warning (2018): Function state mutability can be restricted to view
    --> test/unit/TestCAPXStaking.t.sol:423:5:
@@ -57,9 +57,30 @@ Ran 45 tests for test/unit/TestCAPXStaking.t.sol:TestCAPXStaking
 [PASS] test_unstake_one_second_before_unlock() (gas: 162513)
 [PASS] test_user_different_lock_options_compete_for_rewards() (gas: 246169)
 [PASS] test_zero_apr_no_rewards() (gas: 164470)
-Suite result: ok. 45 passed; 0 failed; 0 skipped; finished in 32.49ms (206.28ms CPU time)
+Suite result: ok. 45 passed; 0 failed; 0 skipped; finished in 152.48ms (148.32ms CPU time)
 
-Ran 1 test suite in 33.85ms (32.49ms CPU time): 45 tests passed, 0 failed, 0 skipped (45 total tests)
+Ran 18 tests for test/fuzz/FuzzCAPXStaking.t.sol:FuzzCAPXStaking
+[PASS] testFuzz_claim_without_stake_reverts(uint8) (runs: 256, μ: 22920, ~: 23223)
+[PASS] testFuzz_claimable_increases_with_time(uint256,uint256) (runs: 256, μ: 192655, ~: 192639)
+[PASS] testFuzz_different_apr_values(uint256) (runs: 256, μ: 195504, ~: 196031)
+[PASS] testFuzz_different_lock_multipliers(uint256) (runs: 256, μ: 28470, ~: 28760)
+[PASS] testFuzz_rapid_stake_unstake_cycles(uint8) (runs: 256, μ: 614454, ~: 465133)
+[PASS] testFuzz_reward_consistency_across_users(uint256,uint256) (runs: 256, μ: 290297, ~: 290400)
+[PASS] testFuzz_stake_insufficient_amounts_reverts(uint256) (runs: 256, μ: 104494, ~: 103886)
+[PASS] testFuzz_stake_valid_amounts(uint256,uint8) (runs: 256, μ: 184752, ~: 185097)
+[PASS] testFuzz_very_large_stake_amounts(uint256) (runs: 256, μ: 183099, ~: 183170)
+[PASS] testFuzz_zero_stake_amount_reverts() (gas: 22092)
+[PASS] testInvariant_available_rewards_non_negative() (gas: 183312)
+[PASS] testInvariant_claim_does_not_affect_principal() (gas: 234286)
+[PASS] testInvariant_claim_resets_accumulation() (gas: 233723)
+[PASS] testInvariant_compound_increases_principal() (gas: 202072)
+[PASS] testInvariant_lock_period_enforced() (gas: 227769)
+[PASS] testInvariant_one_position_per_lock_option() (gas: 525158)
+[PASS] testInvariant_totalStaked_equals_sum_of_positions() (gas: 378746)
+[PASS] testInvariant_unstake_removes_position() (gas: 217218)
+Suite result: ok. 18 passed; 0 failed; 0 skipped; finished in 627.97ms (3.83s CPU time)
+
+Ran 2 test suites in 628.81ms (780.45ms CPU time): 63 tests passed, 0 failed, 0 skipped (63 total tests)
 
 ╭---------------------+------------------+------------------+----------------+-----------------╮
 | File                | % Lines          | % Statements     | % Branches     | % Funcs         |
