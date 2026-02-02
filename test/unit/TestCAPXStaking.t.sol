@@ -641,14 +641,14 @@ contract TestCAPXStaking is Test {
 
     // ==================== Non-Reentrancy & Guard Tests ====================
 
-    function test_pause_disables_all_operations() public {
+    function test_pause_disables_stake_claim_compound() public {
         vm.prank(user1);
         staking.stake(MIN_STAKE, CAPXStaking.LockOption.FLEX);
 
         vm.prank(admin);
         staking.pause();
 
-        // Verify all operations fail when paused
+        // Verify stake/claim/compound fail when paused
         vm.prank(user1);
         vm.expectRevert();
         staking.claim(CAPXStaking.LockOption.FLEX);
@@ -660,6 +660,24 @@ contract TestCAPXStaking is Test {
         vm.prank(user1);
         vm.expectRevert();
         staking.compound(CAPXStaking.LockOption.FLEX);
+    }
+
+    function test_pause_allows_unstake_for_emergencies() public {
+        // User1 stakes with FLEX lock
+        vm.prank(user1);
+        staking.stake(MIN_STAKE, CAPXStaking.LockOption.FLEX);
+
+        // Admin pauses the contract
+        vm.prank(admin);
+        staking.pause();
+
+        // Verify unstake still works when paused (for emergency withdrawals)
+        vm.prank(user1);
+        staking.unstake(CAPXStaking.LockOption.FLEX);
+
+        // Position should be gone
+        CAPXStaking.Position memory pos = staking.getPosition(user1, CAPXStaking.LockOption.FLEX);
+        assertFalse(pos.active);
     }
 
     function test_non_owner_cannot_call_admin_functions() public {

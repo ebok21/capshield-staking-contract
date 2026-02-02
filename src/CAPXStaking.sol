@@ -18,7 +18,7 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
  * - Users cannot change their position configuration after staking (no adding to stake, no lock changes).
  * - Users can claim rewards anytime, even before unlock.
  * - Users can compound rewards on-chain via `compound()` which internally increases their staked amount without transferrinng tokens to the user.
- * - Pausing disables ALL activity: stake, claim, compound, and unstake.
+ * - Pausing disables stake, claim, and compound operations, but unstaking remains available for emergencies.
  * - Owner must be a multisig contract (enforced in constructor).
  */
 contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
@@ -299,14 +299,14 @@ contract CAPXStaking is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Pause all staking activity (stake/unstake/claim/compound).
+     * @notice Pause staking activity (stake/claim/compound). Note: unstaking is NOT paused for emergency withdrawals.
      */
     function pause() external onlyOwner {
         _pause();
     }
 
     /**
-     * @notice Unpause all staking activity.
+     * @notice Unpause staking activity (stake/claim/compound).
      */
     function unpause() external onlyOwner {
         _unpause();

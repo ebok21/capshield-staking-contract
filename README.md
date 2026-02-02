@@ -1,6 +1,6 @@
 # CAPXStaking Contract
 
-A single-position ERC20 staking contract for CAPX tokens with flexible lock options and APR-based rewards.
+A multi-position ERC20 staking contract for CAPX tokens with flexible lock options and APR-based rewards.
 
 ## Overview
 
@@ -10,7 +10,7 @@ A single-position ERC20 staking contract for CAPX tokens with flexible lock opti
 - **Flexible or locked staking** – FLEX positions unlock immediately; locked positions enforce time-lock
 - **APR with multipliers** – Base APR boosted by lock-duration multiplier (1.0x to 2.0x)
 - **Manual compounding** – Claim rewards or compound them into principal without token transfer
-- **Pauseable** – Owner can pause all operations (stake/claim/compound/unstake) for emergencies
+- **Pauseable** – Owner can pause stake/claim/compound operations (unstaking remains available for emergencies to preserve decentralization)
 - **Multisig-enforced** – Owner must be a contract (enforced in constructor)
 
 ## Installation
@@ -114,7 +114,7 @@ struct Position {
 | `setLockMultiplierBps(LockOption, uint256)` | Update lock-duration multiplier |
 | `setMinStakeAmount(uint256)` | Update minimum stake amount |
 | `depositRewards(uint256 amount)` | Add CAPX to reward pool |
-| `pause() / unpause()` | Pause/resume all operations |
+| `pause() / unpause()` | Pause/resume stake/claim/compound (unstaking always available) |
 
 #### View Functions
 
